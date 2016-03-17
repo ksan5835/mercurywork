@@ -55,7 +55,7 @@ class MentorClass extends db{
 				{						
 					$userWValue = $objMentor->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Primary city"');						
 					$append_score = $getExistsrecord['mentor_score'] + $userWValue['weightage_value'];						
-					$sql = "UPDATE mentor_mentee_score SET mentor_score='".$append_score."'";
+					$sql = "UPDATE mentor_mentee_score SET mentor_score='".$append_score."' where id=".$getExistsrecord['id']."";
 					$this->execute($sql);
 				}
 
@@ -86,7 +86,7 @@ class MentorClass extends db{
 					}else{
 						$userWValue = $objMentor->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="State"');						
 						$append_score = $getExistsrecord['mentor_score'] + $userWValue['weightage_value'];						
-						$sql = "UPDATE mentor_mentee_score SET mentor_score='".$append_score."'";
+						$sql = "UPDATE mentor_mentee_score SET mentor_score='".$append_score."' where id=".$getExistsrecord['id']."";
 						$this->execute($sql);
 					}
 

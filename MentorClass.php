@@ -34,65 +34,105 @@ class MentorClass extends db{
 		return $userStateID;
 	}
 	
-	public function get_mentee_primary_city($uid,$gid){
+	
+	public function calculateMentorScoreByGoalID($menteeID,$goalID)
+	{
+		$arrMentorsScores = array();
+		unset($arrMentorScore);
 		
-		$menteeCityID = $this->getone('SELECT city_id FROM user where user_id="'.$uid .'"');
+		//calculate primaary score		
+		$menteeDetails = $this->getone('SELECT * FROM user where user_id="'.$menteeID .'"');		
 		
-		$UsersPCs = $this->getAll('SELECT user_id FROM user where user_type="2" and city_id="'.$menteeCityID['city_id'].'"');
-		
-		$i = 1;
-		
-		$userIDs = array();
-		
-		foreach($UsersPCs as $UsersPC) {			
+		if($menteeDetails){
+			$menteeCityID = $menteeDetails['city_id'];
+			
+			//calculate primary city score
+			$arrPrimaryCityMentorScore = $this->get_mentor_primary_city_score($menteeCityID);						
+					
+						
+			//calculate State Score
+			$arrStateMentorScore = $this->get_mentor_state_score($menteeCityID);
+						
+			
+			
+			
+			$arrAllMentorKeys = array_keys($arrPrimaryCityMentorScore + $arrStateMentorScore);
+			
+					
+			foreach ( $arrAllMentorKeys as $key) {
 				
-				$getExistsrecord = $this->getone('select id FROM mentor_mentee_score where user_id="'.$uid.'" and mentor_id="'.$UsersPC['user_id'].'" and goal_id="'.$gid.'"');
+				$totKeyValue = 0;
 				
-				if(!$getExistsrecord){	
-
-					$userIDs[] = $UsersPC['user_id'];			
-				}else
-				{						
-					$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Primary city"');						
-					$append_score = $getExistsrecord['mentor_score'] + $userWValue['weightage_value'];			
-					$sql = "UPDATE mentor_mentee_score SET mentor_score='".$append_score."' where id=".$getExistsrecord['id']." and user_id=".$uid." and mentor_id=".$UsersPC['user_id']."";
-					$this->execute($sql);
+				//primary city score
+				if (array_key_exists($key,$arrPrimaryCityMentorScore))
+				{
+					$totKeyValue += $arrPrimaryCityMentorScore[$key]; 
 				}
-
-		}	
-
-		return $userIDs;
+				
+				
+				//state score
+				if (array_key_exists($key,$arrStateMentorScore))
+				{
+					$totKeyValue += $arrStateMentorScore[$key]; 
+				}
+				
+				$arrMentorsScores[$key] = $totKeyValue;
+			}			
+			
+			
+		}
+		
+		return $arrMentorsScores;
+	
 	}
 	
-	public function get_mentee_state_track($uid,$gid){
+	//get mentors Primary City score or mentors list by gole id
+	public function get_mentor_primary_city_score($menteeCityID,$dataflag = "weight"){
 		
-		$menteeCityID = $this->getone('SELECT city_id FROM user where user_id="'.$uid .'"');
+		$primaryMentors = array();
+		unset($primaryMentors);
 		
-		$getStateid  = $this->getCityByStateID($menteeCityID['city_id']);
+		$UsersPCs = $this->getAll('SELECT user_id FROM user where user_type="2" and city_id="'.$menteeCityID.'"');				
 		
-		$UsersPCs = $this->getAll('SELECT user_id FROM user JOIN city ON city.city_id=user.city_id WHERE city.state_id="'.$getStateid['state_id'].'"');
-		
-		$i = 1;
-		
-		$userIDs = array();
-		
-		foreach($UsersPCs as $UsersPC) {			
+		foreach($UsersPCs as $UsersPC) {	
 				
-				$getExistsrecord = $this->getone('select id,mentor_score FROM mentor_mentee_score where user_id="'.$uid.'" and mentor_id="'.$UsersPC['user_id'].'" and goal_id="'.$gid.'"');
+				$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Primary city"');				
 				
-					if(!$getExistsrecord){	
+				if($dataflag == "weight"){				
+					$primaryMentors[$UsersPC['user_id']] = $userWValue['weightage_value'];
+				}
+				else{
+					$primaryMentors[] = $UsersPC['user_id'];
+				}
+		}	
 
-							$userIDs[] = $UsersPC['user_id'];			
-					}else{
-						$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="State"');						
-						$append_score = $getExistsrecord['mentor_score'] + $userWValue['weightage_value'];						
-						$sql = "UPDATE mentor_mentee_score SET mentor_score='".$append_score."' where id=".$getExistsrecord['id']." and user_id=".$uid." and mentor_id=".$UsersPC['user_id']."";
-						$this->execute($sql);
-					}
+		return $primaryMentors;
+	}
+	
+	//get mentors state score
+	public function get_mentor_state_score($menteeCityID,$dataflag = "weight"){		
+			
+		$stateMentors = array();
+		unset($stateMentors);
+		
+		$getStateid  = $this->getCityByStateID($menteeCityID);		
+		$UsersPCs = $this->getAll('SELECT user_id FROM user JOIN city ON city.city_id=user.city_id WHERE city.state_id="'.$getStateid['state_id'].'"');	
+			
+		foreach($UsersPCs as $UsersPC) {	
+		
+			$userIDs[] = $UsersPC['user_id'];	
+			$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="State"');						
+			$stateScore = $userWValue['weightage_value'];			
+			if($dataflag == "weight"){				
+				$stateMentors[$UsersPC['user_id']] = $stateScore;
+			}
+			else{
+				$stateMentors[] = $UsersPC['user_id'];
+			}
+		
+		}	
 
-				}	
-
-		return $userIDs;
+		return $stateMentors;
 	}
 	
 	public function insertMentorScore($mentorids , $uid , $gid , $userWValue){

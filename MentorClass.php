@@ -41,7 +41,9 @@ class MentorClass extends db{
 		unset($arrMentorScore);
 		
 		//calculate primaary score		
-		$menteeDetails = $this->getone('SELECT * FROM user where user_id="'.$menteeID .'"');		
+		$menteeDetails = $this->getone('SELECT * FROM user where user_id="'.$menteeID .'"');	
+
+		$menteeStageID = $this->getone('SELECT company_stage_id FROM mentee_bio where user_id="'.$menteeID .'"');
 		
 		if($menteeDetails){
 			$menteeCityID = $menteeDetails['city_id'];
@@ -66,9 +68,14 @@ class MentorClass extends db{
 			//print_r($arrCountryMentorScore);
 			//echo "<br />";
 			
+			//calculate State Score
+			echo "Stage Matching";
+			$arrStageMentorScore = $this->get_mentor_stage_score($menteeStageID['company_stage_id']);
+			print_r($arrStageMentorScore);
+			echo "<br />";
 			
 			
-			$arrAllMentorKeys = array_keys($arrPrimaryCityMentorScore + $arrStateMentorScore);
+			$arrAllMentorKeys = array_keys($arrPrimaryCityMentorScore + $arrStateMentorScore + $arrStageMentorScore);
 			
 					
 			foreach ( $arrAllMentorKeys as $key) {
@@ -86,6 +93,12 @@ class MentorClass extends db{
 				if (array_key_exists($key,$arrStateMentorScore))
 				{
 					$totKeyValue += $arrStateMentorScore[$key]; 
+				}
+				
+				//stage score
+				if (array_key_exists($key,$arrStageMentorScore))
+				{
+					$totKeyValue += $arrStageMentorScore[$key]; 
 				}
 				
 				$arrMentorsScores[$key] = $totKeyValue;
@@ -147,6 +160,32 @@ class MentorClass extends db{
 		return $stateMentors;
 	}
 	
+	
+	//get mentors stage score
+	public function get_mentor_stage_score($menteeStageID,$dataflag = "weight"){		
+			
+		$stageMentors = array();
+		unset($stageMentors);
+		
+		$UsersPCs = $this->getAll('SELECT mentor_user_id FROM mentor_company_stage WHERE company_stage_id="'.$menteeStageID.'"');	
+		
+		foreach($UsersPCs as $UsersPC) {	
+		
+			$userIDs[] = $UsersPC['mentor_user_id'];	
+			$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Mentoring stage"');						
+			$stateScore = $userWValue['weightage_value'];			
+			if($dataflag == "weight"){				
+				$stageMentors[$UsersPC['mentor_user_id']] = $stateScore;
+			}
+			else{
+				$stageMentors[] = $UsersPC['mentor_user_id'];
+			}
+		
+		}	
+
+		return $stageMentors;
+	}
+	
 	//get mentors country score
 	public function get_mentor_country_score($menteeStateID,$dataflag = "weight"){		
 			
@@ -155,6 +194,9 @@ class MentorClass extends db{
 		
 		$getCountryid  = $this->getCityByCountryID($menteeStateID);		
 		$UsersPCs = $this->getAll('SELECT user_id FROM user JOIN city ON city.city_id=user.city_id WHERE city.state_id="'.$getCountryid['country_id'].'" and user.user_type="2"');	
+		
+		echo 'SELECT user_id FROM user JOIN city ON city.city_id=user.city_id WHERE city.state_id="'.$getCountryid['country_id'].'" and user.user_type="2"';
+		die;
 			
 		foreach($UsersPCs as $UsersPC) {	
 		

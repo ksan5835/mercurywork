@@ -74,6 +74,18 @@ class MentorClass extends db{
 			print_r($arrStageMentorScore);
 			echo "<br />";
 			
+			//calculate pending request Score
+			echo "Pending Request";
+			//$arrPendingMentorScore = $this->get_mentor_pending_request_score($menteeStageID['company_stage_id']);
+			//print_r($arrPendingMentorScore);
+			echo "<br />";
+			
+			//calculate rejection request Score	
+			echo "Rejection request";
+			//$arrRejectionMentorScore = $this->get_mentor_rejection_request_score($menteeStageID['company_stage_id']);
+			//print_r($arrRejectionMentorScore);
+			echo "<br />";
+			
 			
 			$arrAllMentorKeys = array_keys($arrPrimaryCityMentorScore + $arrStateMentorScore + $arrStageMentorScore);
 			

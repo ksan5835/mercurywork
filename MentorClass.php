@@ -98,17 +98,11 @@ class MentorClass extends db{
 				
 				$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Primary city"');				
 				
-<<<<<<< HEAD
 				if($dataflag == "weight"){				
 					$primaryMentors[$UsersPC['user_id']] = $userWValue['weightage_value'];
 				}
 				else{
 					$primaryMentors[] = $UsersPC['user_id'];
-=======
-				if(!$getExistsrecord){	
-
-					$userIDs[] = $UsersPC['user_id'];			
->>>>>>> a45f2c4947385cac3c3978b5525e6235bf46ada7
 				}
 		}	
 
@@ -136,20 +130,7 @@ class MentorClass extends db{
 				$stateMentors[] = $UsersPC['user_id'];
 			}
 		
-<<<<<<< HEAD
 		}	
-=======
-		foreach($UsersPCs as $UsersPC) {			
-				
-				$getExistsrecord = $this->getone('select id,mentor_score FROM mentor_mentee_score where user_id="'.$uid.'" and mentor_id="'.$UsersPC['user_id'].'" and goal_id="'.$gid.'"');
-				
-					if(!$getExistsrecord){	
-
-							$userIDs[] = $UsersPC['user_id'];			
-					}
-
-				}	
->>>>>>> a45f2c4947385cac3c3978b5525e6235bf46ada7
 
 		return $stateMentors;
 	}

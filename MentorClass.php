@@ -123,7 +123,15 @@ class MentorClass extends db{
 				
 				//calculate rating score
 				$mentorRatingScore = $this->calCulateMentorRatingByID($mentorUserID);
-				$mentorTotalScore += $mentorRatingScore;			
+				$mentorTotalScore += $mentorRatingScore;
+
+				//calculate pending request score
+				$mentorPendingRequestScore = $this->calCulateMentorPendingRequestByID($mentorUserID);
+				$mentorTotalScore += $mentorPendingRequestScore;
+				
+				//calculate reject score
+				$mentorRejectRequestScore = $this->calCulateMentorRejectionRequestByID($mentorUserID);
+				$mentorTotalScore += $mentorRejectRequestScore;
 				
 				echo "Mentor ID: ".$mentorUserID;
 				echo "<br>";	
@@ -138,6 +146,10 @@ class MentorClass extends db{
 				echo "expertise Score - ".$mentorExpertiseScore;
 				echo "<br>";				
 				echo "Rating Score - ".$mentorRatingScore;
+				echo "<br>";				
+				echo "Pending Request Score - ".$mentorPendingRequestScore;
+				echo "<br>";				
+				echo "Reject Request Score - ".$mentorRejectRequestScore;
 				echo "<br>";			
 				echo "<br>";							
 				echo "Total Score - ".$mentorTotalScore;
@@ -187,6 +199,45 @@ class MentorClass extends db{
 			
 		}
 		
+		return $returnScore;
+	}
+	
+	public function calCulateMentorPendingRequestByID($mentorID)
+	{
+		$returnScore = 0;
+
+		$totalRequest = $this->getone('SELECT request_count from mentor_request_count where mentor_user_id="'.$mentorID.'"');		
+		
+		if($totalRequest['request_count'])
+		{
+			$criteriaWeightage = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Request accept history"');
+			$ratingWeightValue = $criteriaWeightage['weightage_value'];
+			
+			$rejectionRequest = $this->getone('SELECT rejection_count from mentor_rejection_count where mentor_user_id="'.$mentorID.'"');
+			$totalAcceptRequest = $totalRequest['request_count'] - $rejectionRequest['rejection_count'];
+
+			$returnScore =  round(($totalAcceptRequest / $totalRequest['request_count']) * $ratingWeightValue);
+		}
+		
+		return $returnScore;
+	}
+	
+	public function calCulateMentorRejectionRequestByID($mentorID)
+	{
+		$returnScore = 0;
+		
+		$totalRequest = $this->getone('SELECT request_count from mentor_request_count where mentor_user_id="'.$mentorID.'"');		
+
+		if($totalRequest['request_count'])
+		{
+			$criteriaWeightage = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Request reject history"');
+			$ratingWeightValue = $criteriaWeightage['weightage_value'];
+			
+			$rejectionRequest = $this->getone('SELECT rejection_count from mentor_rejection_count where mentor_user_id="'.$mentorID.'"');
+
+			$returnScore =  $ratingWeightValue - round(($rejectionRequest['rejection_count'] / $totalRequest['request_count']) * $ratingWeightValue);
+		}
+
 		return $returnScore;
 	}
 	

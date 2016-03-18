@@ -35,199 +35,159 @@ class MentorClass extends db{
 	}
 	
 	
-	public function calculateMentorScoreByGoalID($menteeID,$goalID)
+	public function calCulateMentorScoreAll($menteeID,$goalID)
 	{
-		$arrMentorsScores = array();
-		unset($arrMentorScore);
 		
-		//calculate primaary score		
-		$menteeDetails = $this->getone('SELECT * FROM user where user_id="'.$menteeID .'"');	
-
-		$menteeStageID = $this->getone('SELECT company_stage_id FROM mentee_bio where user_id="'.$menteeID .'"');
+        $menteeStageID = "";
+		$goalExpertiseID = "";
 		
-		if($menteeDetails){
-			$menteeCityID = $menteeDetails['city_id'];
-			$getmenteeStateID = $this->getone('SELECT state_id FROM city where city_id="'.$menteeCityID.'"');	
-			$menteeStateID = $getmenteeStateID['state_id'];
+		
+		//get mentee's details
+		$menteeDetails = $this->getone('SELECT u.user_id,u.city_id,c.state_id,s.country_id FROM USER u, city c, state s WHERE c.city_id = u.city_id AND c.state_id = s.state_id AND u.user_type = 1 AND u.user_status = 1 and u.user_id = "'.$menteeID .'"');	
+		$menteeStageDetails = $this->getone('SELECT company_stage_id FROM mentee_bio where user_id="'.$menteeID .'"');
+		if($menteeStageDetails){
+			$menteeStageID = $menteeStageDetails['company_stage_id'];
+		}
+		
+		//goal Details
+		$goalDetails = $this->getone('SELECT * FROM goal where goal_id="'.$goalID.'"');	
+		if($goalDetails)
+		{
+			$goalExpertiseID = $goalDetails['expertise_id'];									
+		}	
+		
+		
+		
+		
+		//get mentors list
+		$mentorsLists = $this->getAll('SELECT u.user_id,u.city_id,c.state_id,s.country_id FROM USER u, city c, state s WHERE c.city_id = u.city_id AND c.state_id = s.state_id AND u.user_type="2" AND u.user_status = 1');	
+		
+		foreach($mentorsLists as $mentor) {
 			
-			//calculate primary city score
-			echo "Primary city";
-			$arrPrimaryCityMentorScore = $this->get_mentor_primary_city_score($menteeCityID);						
-			print_r($arrPrimaryCityMentorScore);
-			echo "<br />";
 			
+			$mentorTotalScore = 0;
+			
+			$mentorScore = "";
+			$mentorStageID = "";
+			$mentorExpertiseID = "";
+			$mentorUserID = $mentor['user_id'];
+			$mentorCityID = $mentor['city_id'];
+			$mentorStateID = $mentor['state_id'];
+			$mentorCountryID = $mentor['country_id'];
+			
+			//get mentor Stage id
+			$mentorCompStageDetails = $this->getone('SELECT company_stage_id FROM mentor_company_stage where mentor_user_id="'.$mentorUserID .'"');
+			if($mentorCompStageDetails){
+				$mentorStageID = $mentorCompStageDetails['company_stage_id'];
+			}
+			
+			//get mentor expertise Details			
+			$mentorExpertiseDetails = $this->getone('SELECT expertise_id FROM mentor_expertise where mentor_user_id="'.$mentorUserID .'"');
+			if($mentorExpertiseDetails){
+				$mentorExpertiseID = $mentorExpertiseDetails['expertise_id'];
+			}
+			
+			
+			if($menteeDetails){
 						
-			//calculate State Score
-			echo "State city";
-			$arrStateMentorScore = $this->get_mentor_state_score($menteeCityID);
-			print_r($arrStateMentorScore);
-			echo "<br />";
-			
-			//calculate State Score
-			//$arrCountryMentorScore = $this->get_mentor_country_score($menteeStateID);
-			//print_r($arrCountryMentorScore);
-			//echo "<br />";
-			
-			//calculate State Score
-			echo "Stage Matching";
-			$arrStageMentorScore = $this->get_mentor_stage_score($menteeStageID['company_stage_id']);
-			print_r($arrStageMentorScore);
-			echo "<br />";
-			
-			//calculate pending request Score
-			echo "Pending Request";
-			//$arrPendingMentorScore = $this->get_mentor_pending_request_score($menteeStageID['company_stage_id']);
-			//print_r($arrPendingMentorScore);
-			echo "<br />";
-			
-			//calculate rejection request Score	
-			echo "Rejection request";
-			//$arrRejectionMentorScore = $this->get_mentor_rejection_request_score($menteeStageID['company_stage_id']);
-			//print_r($arrRejectionMentorScore);
-			echo "<br />";
-			
-			
-			$arrAllMentorKeys = array_keys($arrPrimaryCityMentorScore + $arrStateMentorScore + $arrStageMentorScore);
-			
-					
-			foreach ( $arrAllMentorKeys as $key) {
+				$menteeUserID = $menteeDetails['user_id'];
+				$menteeCityID = $menteeDetails['city_id'];				
+				$menteeStateID = $menteeDetails['state_id'];
+				$menteeCountryID = $menteeDetails['country_id'];				
 				
-				$totKeyValue = 0;
+				//calculdate primary city score
+				$PrimaryCityScore = $this->calculateScoreByGeneral($menteeCityID,$mentorCityID,"Primary city");
+				$mentorTotalScore += $PrimaryCityScore;
 				
-				//primary city score
-				if (array_key_exists($key,$arrPrimaryCityMentorScore))
-				{
-					$totKeyValue += $arrPrimaryCityMentorScore[$key]; 
-				}
+				//calculdate primary city score
+				$stateScore = $this->calculateScoreByGeneral($menteeStateID,$mentorStateID,"State");
+				$mentorTotalScore += $stateScore;
 				
+				//calculdate Country score
+				$countryScore = $this->calculateScoreByGeneral($menteeCountryID,$mentorCountryID,"Country");
+				$mentorTotalScore += $countryScore;
 				
-				//state score
-				if (array_key_exists($key,$arrStateMentorScore))
-				{
-					$totKeyValue += $arrStateMentorScore[$key]; 
-				}
+				//calculdate Country score
+				$companyStageScore = $this->calculateScoreByGeneral($menteeStageID,$mentorStageID,"Mentoring stage");
+				$mentorTotalScore += $companyStageScore;
 				
-				//stage score
-				if (array_key_exists($key,$arrStageMentorScore))
-				{
-					$totKeyValue += $arrStageMentorScore[$key]; 
-				}
+				//calculdate Country score
+				$mentorExpertiseScore = $this->calculateScoreByGeneral($goalExpertiseID,$mentorExpertiseID,"Skills");
+				$mentorTotalScore += $mentorExpertiseScore;
 				
-				$arrMentorsScores[$key] = $totKeyValue;
-			}			
+				//calculdate rating Value
+				$mentorRatingScore = $this->calCulateMentorRatingByID($mentorUserID);
+				$mentorTotalScore += $mentorRatingScore;			
+				
+				echo "Mentor ID: ".$mentorUserID;
+				echo "<br>";	
+				echo "Primary Score - ".$PrimaryCityScore;
+				echo "<br>";	
+				echo "Stage Score - ".$stateScore;
+				echo "<br>";	
+				echo "Country Score - ".$countryScore;
+				echo "<br>";	
+				echo "Stage Score - ".$companyStageScore;
+				echo "<br>";	
+				
+				echo "expertise Score - ".$mentorExpertiseScore;
+				echo "<br>";	
+				
+				echo "Rating Score - ".$mentorRatingScore;
+				echo "<br>";								
+				
+				echo "<br>";
+								
+				echo "Total Score - ".$mentorTotalScore;
+				echo "<br>";	
+				
+				echo "<br>";	
+				echo "<hr>";	
+			   
+			}				
 			
 			
 		}
 		
-		return $arrMentorsScores;
-	
-	}
-	
-	//get mentors Primary City score or mentors list by gole id
-	public function get_mentor_primary_city_score($menteeCityID,$dataflag = "weight"){
 		
-		$primaryMentors = array();
-		unset($primaryMentors);
-		
-		$UsersPCs = $this->getAll('SELECT user_id FROM user where user_type="2" and city_id="'.$menteeCityID.'"');				
-		
-		foreach($UsersPCs as $UsersPC) {	
-				
-				$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Primary city"');				
-				
-				if($dataflag == "weight"){				
-					$primaryMentors[$UsersPC['user_id']] = $userWValue['weightage_value'];
-				}
-				else{
-					$primaryMentors[] = $UsersPC['user_id'];
-				}
-		}	
-
-		return $primaryMentors;
-	}
-	
-	//get mentors state score
-	public function get_mentor_state_score($menteeCityID,$dataflag = "weight"){		
-			
-		$stateMentors = array();
-		unset($stateMentors);
-		
-		$getStateid  = $this->getCityByStateID($menteeCityID);		
-		$UsersPCs = $this->getAll('SELECT user_id FROM user JOIN city ON city.city_id=user.city_id WHERE city.state_id="'.$getStateid['state_id'].'" and user.user_type="2"');	
-			
-		foreach($UsersPCs as $UsersPC) {	
-		
-			$userIDs[] = $UsersPC['user_id'];	
-			$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="State"');						
-			$stateScore = $userWValue['weightage_value'];			
-			if($dataflag == "weight"){				
-				$stateMentors[$UsersPC['user_id']] = $stateScore;
-			}
-			else{
-				$stateMentors[] = $UsersPC['user_id'];
-			}
-		
-		}	
-
-		return $stateMentors;
 	}
 	
 	
-	//get mentors stage score
-	public function get_mentor_stage_score($menteeStageID,$dataflag = "weight"){		
-			
-		$stageMentors = array();
-		unset($stageMentors);
+	public function calculateScoreByGeneral($cpvalue1,$cpvalue2,$weightageflag)	
+	{
+		$returnScore = 0;
 		
-		$UsersPCs = $this->getAll('SELECT mentor_user_id FROM mentor_company_stage WHERE company_stage_id="'.$menteeStageID.'"');	
-		
-		foreach($UsersPCs as $UsersPC) {	
-		
-			$userIDs[] = $UsersPC['mentor_user_id'];	
-			$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Mentoring stage"');						
-			$stateScore = $userWValue['weightage_value'];			
-			if($dataflag == "weight"){				
-				$stageMentors[$UsersPC['mentor_user_id']] = $stateScore;
+		if($cpvalue1 == $cpvalue2)
+		{
+			$criteriaWeightage = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="'.$weightageflag.'"');
+			if($criteriaWeightage)
+			{
+				$returnScore = $criteriaWeightage['weightage_value'];
 			}
-			else{
-				$stageMentors[] = $UsersPC['mentor_user_id'];
-			}
-		
-		}	
-
-		return $stageMentors;
+		}
+		return $returnScore;
 	}
 	
-	//get mentors country score
-	public function get_mentor_country_score($menteeStateID,$dataflag = "weight"){		
+	public function calCulateMentorRatingByID($mentorID)
+	{
+		$returnScore = 0;
+		
+		$averageScoreDetails = $this->getone('SELECT AVG(rating_givenby_mentee) as mentorRating FROM `goal` WHERE mentor_user_id = '.$mentorID);
+		if($averageScoreDetails)
+		{
+			$criteriaWeightage = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Ratings"');
+			$ratingWeightValue = $criteriaWeightage['weightage_value'];
 			
-		$countryMentors = array();
-		unset($countryMentors);
-		
-		$getCountryid  = $this->getCityByCountryID($menteeStateID);		
-		$UsersPCs = $this->getAll('SELECT user_id FROM user JOIN city ON city.city_id=user.city_id WHERE city.state_id="'.$getCountryid['country_id'].'" and user.user_type="2"');	
-		
-		echo 'SELECT user_id FROM user JOIN city ON city.city_id=user.city_id WHERE city.state_id="'.$getCountryid['country_id'].'" and user.user_type="2"';
-		die;
+			$averageScore = $averageScoreDetails['mentorRating'];
+			$returnScore =  round(($averageScore / 5) * $ratingWeightValue);
 			
-		foreach($UsersPCs as $UsersPC) {	
+		}
 		
-			$userIDs[] = $UsersPC['user_id'];	
-			$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Country"');						
-			$countryScore = $userWValue['weightage_value'];			
-			if($dataflag == "weight"){				
-				$countryMentors[$UsersPC['user_id']] = $countryScore;
-			}
-			else{
-				$countryMentors[] = $UsersPC['user_id'];
-			}
-		
-		}	
-
-		return $countryMentors;
+		return $returnScore;
 	}
 	
-	public function insertMentorScore($arrMentorsWithScore , $uid , $gid){
+	
+	public function insertMentorScore($menteeID,$mentorID,$goalID,$mentorScore){
 		
 		$userMentorIDs = $arrMentorsWithScore;		
 		//$userWValue = $userWValue['weightage_value'];

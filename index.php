@@ -24,9 +24,12 @@ include 'MentorClass.php';
 	$menteeID = $user_id;
 	$goalID   = $goal_id;
 
-	$arrMentorsWithScore = $objMentor->calculateMentorScoreByGoalID($menteeID,$goalID);
+	//$arrMentorsWithScore = $objMentor->calculateMentorScoreByGoalID($menteeID,$goalID);
 	
-	$objMentor->insertMentorScore($arrMentorsWithScore,$user_id,$goal_id);
+	//$objMentor->insertMentorScore($arrMentorsWithScore,$user_id,$goal_id);
+	
+	$objMentor->calCulateMentorScoreAll($menteeID,$goalID);
+	
 	
 	die;
 	/*

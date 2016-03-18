@@ -40,23 +40,58 @@ class MentorClass extends db{
 		$arrMentorsScores = array();
 		unset($arrMentorScore);
 		
+		$arrScoreCriteria = array();
+		unset($arrScoreCriteria);
+		
 		//calculate primaary score		
-		$menteeDetails = $this->getone('SELECT * FROM user where user_id="'.$menteeID .'"');		
+		$menteeDetails = $this->getone('SELECT * FROM user where user_id="'.$menteeID .'"');
+		$goalDetails = $this->getone('SELECT * FROM goal where goal_id="'.$goalID.'"');	
 		
 		if($menteeDetails){
 			$menteeCityID = $menteeDetails['city_id'];
 			
 			//calculate primary city score
 			$arrPrimaryCityMentorScore = $this->get_mentor_primary_city_score($menteeCityID);						
-					
+			$arrScoreCriteria[] = array_keys($arrPrimaryCityMentorScore);
 						
 			//calculate State Score
 			$arrStateMentorScore = $this->get_mentor_state_score($menteeCityID);
+			$arrScoreCriteria[] = array_keys($arrStateMentorScore);
+			
+			//calculdate expertise details
+			unset($arrExpertiseMentorScore);
+			if($goalDetails )
+			{
+				$goalExpertiseID = $goalDetails['expertise_id'];
+				$arrExpertiseMentorScore = $this->get_mentor_expertise_score($goalExpertiseID);	
+				$arrScoreCriteria[] = array_keys($arrExpertiseMentorScore);							
+			}	
+			$arrAllMentorKeys = array();
+			unset($arrAllMentorKeys);			
+			
+			for($i=0;$i<count($arrScoreCriteria);$i++)
+			{
+				if($arrScoreCriteria[$i]){
+					
+					if(@$arrAllMentorKeys){	
 						
+						$arrAllMentorKeys = array_merge($arrAllMentorKeys,$arrScoreCriteria[$i]);
+					}
+					else
+					{
+					 	$arrAllMentorKeys = $arrScoreCriteria[$i];
+					}
+				
+				}
+			}
 			
 			
+			//$arrAllMentorKeys = ($arrPrimaryCityMentorScore) ? array_keys($arrPrimaryCityMentorScore) : $arrAllMentorKeys;
+			//$arrAllMentorKeys = ($arrStateMentorScore) ? array_merge($arrAllMentorKeys,array_keys($arrStateMentorScore)) : $arrAllMentorKeys;
+			//$arrAllMentorKeys = ($arrExpertiseMentorScore) ? array_merge($arrAllMentorKeys,array_keys($arrExpertiseMentorScore)) : $arrAllMentorKeys;
 			
-			$arrAllMentorKeys = array_keys($arrPrimaryCityMentorScore + $arrStateMentorScore);
+			
+			//$arrAllMentorKeys = array_keys($arrPrimaryCityMentorScore + $arrStateMentorScore + $arrExpertiseMentorScore);
 			
 					
 			foreach ( $arrAllMentorKeys as $key) {
@@ -74,6 +109,12 @@ class MentorClass extends db{
 				if (array_key_exists($key,$arrStateMentorScore))
 				{
 					$totKeyValue += $arrStateMentorScore[$key]; 
+				}
+				
+				//expertise score
+				if (array_key_exists($key,$arrExpertiseMentorScore))
+				{
+					$totKeyValue += $arrExpertiseMentorScore[$key]; 
 				}
 				
 				$arrMentorsScores[$key] = $totKeyValue;
@@ -154,10 +195,37 @@ class MentorClass extends db{
 		
 	}
 	
+	
+	public function get_mentor_expertise_score($expertiseID,$dataflag = "weight"){
+		
+		$expertiseMentors = array();
+		unset($expertiseMentors);				
+		
+		$UsersPCs = $this->getAll('SELECT u.user_id,m.expertise_id FROM USER u , mentor_expertise m WHERE u.user_id = m.mentor_user_id AND m.expertise_id = '.$expertiseID);				
+		
+		
+		foreach($UsersPCs as $UsersPC) {	
+				
+				$userWValue = $this->getone('select weightage_value FROM mentor_mentee_weightage_criteria where weightage_criteria="Skills"');				
+				
+				if($dataflag == "weight"){				
+					$expertiseMentors[$UsersPC['user_id']] = $userWValue['weightage_value'];
+				}
+				else{
+					$expertiseMentors[] = $UsersPC['user_id'];
+				}
+		}		  
+
+		return $expertiseMentors;
+	}
+	
 }
 
-	
-	
+	public function get_mentors_ratings_by_id($mentorID)
+	{
+		
+	}	
+		
 	
 
 ?>

@@ -16,6 +16,12 @@ class MentorClass extends db{
 		return $userGoal;
 	}
 	
+	public function get_user_goals(){
+		
+		$userGoal = $this->getAll('SELECT * FROM goal where goal_status_id="1"');
+		return $userGoal;
+	}
+	
 	public function get_user_goal_by_id($goal_id){
 		
 		$userGoal = $this->getAll('SELECT * FROM goal where goal_id="'.$goal_id.'"');
@@ -95,27 +101,27 @@ class MentorClass extends db{
 				$menteeStateID = $menteeDetails['state_id'];
 				$menteeCountryID = $menteeDetails['country_id'];				
 				
-				//calculdate primary city score
+				//calculate primary city score
 				$PrimaryCityScore = $this->calculateScoreByGeneral($menteeCityID,$mentorCityID,"Primary city");
 				$mentorTotalScore += $PrimaryCityScore;
 				
-				//calculdate primary city score
+				//calculate state score
 				$stateScore = $this->calculateScoreByGeneral($menteeStateID,$mentorStateID,"State");
 				$mentorTotalScore += $stateScore;
 				
-				//calculdate Country score
+				//calculate Country score
 				$countryScore = $this->calculateScoreByGeneral($menteeCountryID,$mentorCountryID,"Country");
 				$mentorTotalScore += $countryScore;
 				
-				//calculdate Country score
+				//calculate mentor stage score
 				$companyStageScore = $this->calculateScoreByGeneral($menteeStageID,$mentorStageID,"Mentoring stage");
 				$mentorTotalScore += $companyStageScore;
 				
-				//calculdate Country score
+				//calculate skills score
 				$mentorExpertiseScore = $this->calculateScoreByGeneral($goalExpertiseID,$mentorExpertiseID,"Skills");
 				$mentorTotalScore += $mentorExpertiseScore;
 				
-				//calculdate rating Value
+				//calculate rating score
 				$mentorRatingScore = $this->calCulateMentorRatingByID($mentorUserID);
 				$mentorTotalScore += $mentorRatingScore;			
 				
@@ -128,21 +134,19 @@ class MentorClass extends db{
 				echo "Country Score - ".$countryScore;
 				echo "<br>";	
 				echo "Stage Score - ".$companyStageScore;
-				echo "<br>";	
-				
+				echo "<br>";					
 				echo "expertise Score - ".$mentorExpertiseScore;
-				echo "<br>";	
-				
+				echo "<br>";				
 				echo "Rating Score - ".$mentorRatingScore;
-				echo "<br>";								
-				
-				echo "<br>";
-								
+				echo "<br>";			
+				echo "<br>";							
 				echo "Total Score - ".$mentorTotalScore;
 				echo "<br>";	
 				
 				echo "<br>";	
 				echo "<hr>";	
+				
+				$this->insertMentorScore($menteeUserID ,$mentorUserID,$goalID,$mentorTotalScore);
 			   
 			}				
 			
@@ -189,29 +193,23 @@ class MentorClass extends db{
 	
 	public function insertMentorScore($menteeID,$mentorID,$goalID,$mentorScore){
 		
-		$userMentorIDs = $arrMentorsWithScore;		
-		//$userWValue = $userWValue['weightage_value'];
-		print_r($userMentorIDs);
-		
-		
-		foreach($userMentorIDs as $key => $value)
-		{
-			
-			$getExistsrecord = $this->getone('select id FROM mentor_mentee_score where user_id="'.$uid.'" and mentor_id="'.$key.'" and goal_id="'.$gid.'"');
+		$userMentorID = $mentorID;		
+		$userMenteeID = $menteeID;	
+		$userGoalID = $goalID;
+		$userMentorScore = $mentorScore;		
+				
+			$getExistsrecord = $this->getone('select id FROM mentor_mentee_score where user_id="'.$userMenteeID.'" and mentor_id="'.$userMentorID.'" and goal_id="'.$userGoalID.'"');
 			
 			if(!$getExistsrecord){
 			
 				$sql = "INSERT INTO mentor_mentee_score (user_id, goal_id, mentor_id, mentor_score,create_systemuser_id,create_timestamp,update_systemuser_id,update_timestamp)
-						VALUES ('".$uid."', '".$gid."','".$key."', '".$value."','".$uid."',now(),'".$uid."',now())";
-						
-								$this->execute($sql);
-								
-								echo "New record created successfully<br />";
+						VALUES ('".$userMenteeID."', '".$userGoalID."','".$userMentorID."', '".$userMentorScore."','".$userMenteeID."',now(),'".$userMenteeID."',now())";						
+				$this->execute($sql);								
 			}else{
-				$sql = "UPDATE mentor_mentee_score SET mentor_score='".$value."' where id=".$getExistsrecord['id']." and user_id=".$uid." and mentor_id=".$key."";
+				$sql = "UPDATE mentor_mentee_score SET mentor_score='".$userMentorScore."' where id=".$getExistsrecord['id']."";
 				$this->execute($sql);
 			}
-		}
+		
 		
 	}
 	

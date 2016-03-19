@@ -67,7 +67,8 @@ class MentorClass extends db{
 		
 		//get mentors list
 		$mentorsLists = $this->getAll('SELECT u.user_id,u.city_id,c.state_id,s.country_id FROM USER u, city c, state s WHERE c.city_id = u.city_id AND c.state_id = s.state_id AND u.user_type="2" AND u.user_status = 1');	
-		
+		echo "<table border='1' cellspacing='2' cellspadding='2'><tr><th>MentorID</th><th>Mentee</th><th>GoalID</th><th>Primary Score</th><th>State Score</th><th>Country Score</th><th>Stage Score</th><th>Expertise Score</th><th>Rating Score</th>
+				<th>Pending Request Score</th><th>Reject Request  Score</th><th>Total Score</th></tr>";
 		foreach($mentorsLists as $mentor) {
 			
 			
@@ -133,7 +134,14 @@ class MentorClass extends db{
 				$mentorRejectRequestScore = $this->calCulateMentorRejectionRequestByID($mentorUserID);
 				$mentorTotalScore += $mentorRejectRequestScore;
 				
-				echo "Mentor ID: ".$mentorUserID;
+				
+				echo "<tr><td>".$mentorUserID."</td><td>".$menteeUserID."</td><td>".$goalID."</td><td>".$PrimaryCityScore."</td>
+				<td>".$stateScore."</td><td>".$countryScore."</td><td>".$companyStageScore."</td><td>".$mentorExpertiseScore."</td>
+				<td>".$mentorRatingScore."</td><td>".$mentorPendingRequestScore."</td><td>".$mentorRejectRequestScore."</td>
+				<td>".$mentorTotalScore."</td></tr>";
+				
+				
+				/*echo "Mentor ID: ".$mentorUserID;
 				echo "<br>";	
 				echo "Primary Score - ".$PrimaryCityScore;
 				echo "<br>";	
@@ -156,7 +164,7 @@ class MentorClass extends db{
 				echo "<br>";	
 				
 				echo "<br>";	
-				echo "<hr>";	
+				echo "<hr>";	*/
 				
 				$this->insertMentorScore($menteeUserID ,$mentorUserID,$goalID,$mentorTotalScore);
 			   
@@ -164,6 +172,8 @@ class MentorClass extends db{
 			
 			
 		}
+		
+		echo "</table>";
 		
 		
 	}

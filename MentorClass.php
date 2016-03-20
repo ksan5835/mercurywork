@@ -6,13 +6,13 @@ class MentorClass extends db{
 	
 	public function get_user_details($user_id){
 		
-		$userWValue = $this->getone('SELECT * FROM user where user_id="'.$user_id .'"');
+		$userWValue = $this->getone('SELECT * FROM `user` where user_id="'.$user_id .'"');
 		return $userWValue;
 	}
 	
 	public function get_user_goal_details($gid){
 		
-		$userGoal = $this->getAll('SELECT * FROM goal where goal_id="'.$gid .'"');
+		$userGoal = $this->getone('SELECT * FROM goal where goal_id="'.$gid .'"');
 		return $userGoal;
 	}
 	
@@ -49,7 +49,8 @@ class MentorClass extends db{
 		
 		
 		//get mentee's details
-		$menteeDetails = $this->getone('SELECT u.user_id,u.city_id,c.state_id,s.country_id FROM USER u, city c, state s WHERE c.city_id = u.city_id AND c.state_id = s.state_id AND u.user_type = 1 AND u.user_status = 1 and u.user_id = "'.$menteeID .'"');	
+		$menteeDetails = $this->getone('SELECT u.user_id,u.city_id,c.state_id,s.country_id FROM `user` u, city c, state s WHERE c.city_id = u.city_id AND c.state_id = s.state_id AND u.user_type = 1 AND u.user_status = 1 and u.user_id = "'.$menteeID .'"');
+	
 		$menteeStageDetails = $this->getone('SELECT company_stage_id FROM mentee_bio where user_id="'.$menteeID .'"');
 		if($menteeStageDetails){
 			$menteeStageID = $menteeStageDetails['company_stage_id'];
@@ -66,9 +67,9 @@ class MentorClass extends db{
 		
 		
 		//get mentors list
-		$mentorsLists = $this->getAll('SELECT u.user_id,u.city_id,c.state_id,s.country_id FROM USER u, city c, state s WHERE c.city_id = u.city_id AND c.state_id = s.state_id AND u.user_type="2" AND u.user_status = 1');	
-		echo "<table border='1' cellspacing='2' cellspadding='2'><tr><th>MentorID</th><th>Mentee</th><th>GoalID</th><th>Primary Score</th><th>State Score</th><th>Country Score</th><th>Stage Score</th><th>Expertise Score</th><th>Rating Score</th>
-				<th>Pending Request Score</th><th>Reject Request  Score</th><th>Total Score</th></tr>";
+		$mentorsLists = $this->getAll('SELECT u.user_id,u.city_id,c.state_id,s.country_id FROM `user` u, city c, state s WHERE c.city_id = u.city_id AND c.state_id = s.state_id AND u.user_type="2" AND u.user_status = 1');	
+		echo "<table border='1' cellspacing='2' cellspadding='2'><tr><th>MentorID</th><th>Mentee</th><th>GoalID</th><th>Primary City</th><th>Secondary City</th><th>State Score</th><th>Country Score</th><th>Stage Score</th><th>Expertise Score</th><th>Adjacent Skills</th><th>Rating Score</th>
+				<th>Pending Request</th><th>Reject Request  Score</th><th>Total Score</th></tr>";
 		foreach($mentorsLists as $mentor) {
 			
 			
@@ -103,16 +104,27 @@ class MentorClass extends db{
 				$menteeCountryID = $menteeDetails['country_id'];				
 				
 				//calculate primary city score
-				$PrimaryCityScore = $this->calculateScoreByGeneral($menteeCityID,$mentorCityID,"Primary city");
-				$mentorTotalScore += $PrimaryCityScore;
+				$PrimaryCityScore = $this->calculateScoreByGeneral($menteeCityID,$mentorCityID,"Primary city");				
 				
 				//calculate state score
-				$stateScore = $this->calculateScoreByGeneral($menteeStateID,$mentorStateID,"State");
-				$mentorTotalScore += $stateScore;
+				$stateScore = $this->calculateScoreByGeneral($menteeStateID,$mentorStateID,"State");				
 				
 				//calculate Country score
-				$countryScore = $this->calculateScoreByGeneral($menteeCountryID,$mentorCountryID,"Country");
-				$mentorTotalScore += $countryScore;
+				$countryScore = $this->calculateScoreByGeneral($menteeCountryID,$mentorCountryID,"Country");				
+				
+				if(isset($PrimaryCityScore) && $PrimaryCityScore != 0){
+					$mentorTotalScore += $PrimaryCityScore;		
+					$stateScore = 0;
+					$countryScore = 0;
+				}elseif(isset($PrimaryCityScore) && $PrimaryCityScore != 0){
+					$mentorTotalScore += $stateScore;
+					$PrimaryCityScore = 0;
+					$countryScore = 0;
+				}else{					
+					$mentorTotalScore += $countryScore;
+					$PrimaryCityScore = 0;
+					$stateScore = 0;
+				}
 				
 				//calculate mentor stage score
 				$companyStageScore = $this->calculateScoreByGeneral($menteeStageID,$mentorStageID,"Mentoring stage");
@@ -135,8 +147,8 @@ class MentorClass extends db{
 				$mentorTotalScore += $mentorRejectRequestScore;
 				
 				
-				echo "<tr><td>".$mentorUserID."</td><td>".$menteeUserID."</td><td>".$goalID."</td><td>".$PrimaryCityScore."</td>
-				<td>".$stateScore."</td><td>".$countryScore."</td><td>".$companyStageScore."</td><td>".$mentorExpertiseScore."</td>
+				echo "<tr><td>".$mentorUserID."</td><td>".$menteeUserID."</td><td>".$goalID."</td><td>".$PrimaryCityScore."</td><td>0</td>
+				<td>".$stateScore."</td><td>".$countryScore."</td><td>".$companyStageScore."</td><td>".$mentorExpertiseScore."</td><td>0</td>
 				<td>".$mentorRatingScore."</td><td>".$mentorPendingRequestScore."</td><td>".$mentorRejectRequestScore."</td>
 				<td>".$mentorTotalScore."</td></tr>";
 				
@@ -173,8 +185,27 @@ class MentorClass extends db{
 			
 		}
 		
-		echo "</table>";
+		echo "</table>";		
+
+	}
+	public function get_top10_users($menteeID,$goalID){
+		echo "<br /> <b> Top 10 Users:";
+		echo "<table border='1' cellspacing='2' cellspadding='2'><tr><th>MentorID</th><th>Mentor Name</th><th>MenteeID</th><th>Mentee Name</th><th>Goal ID</th><th>Goal Title</th><th>Total Score</th></tr>";
+		$mentorDetails = $this->getAll('SELECT * FROM mentor_mentee_score where user_id="'.$menteeID .'" and goal_id="'.$goalID .'" ORDER BY mentor_score DESC LIMIT 10');
 		
+		foreach($mentorDetails as $mentorDetail) {
+			
+			$userMentorDetailsnew = $this->get_user_details($mentorDetail['mentor_id']);
+			$userMenteeDetailsnew = $this->get_user_details($mentorDetail['user_id']);
+			$userGoals = $this->get_user_goal_details($goalID);
+			
+			$mentorName = $userMentorDetailsnew['first_name']." ".$userMentorDetailsnew['last_name'];
+			$menteeName = $userMenteeDetailsnew['first_name']." ".$userMenteeDetailsnew['last_name'];
+			
+			echo "<tr><td>".$mentorDetail['mentor_id']."</td><td>".$mentorName."</td><td>".$mentorDetail['user_id']."</td><td>".$menteeName."</td><td>".$goalID."</td><td>".$userGoals['goal_title']."</td><td>".$mentorDetail['mentor_score']."</td></tr>";
+		}
+
+		echo "</table>";
 		
 	}
 	
